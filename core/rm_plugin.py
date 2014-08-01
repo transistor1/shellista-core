@@ -1,6 +1,10 @@
 '''rm:
 remove one or more files/directories
-usage: rm file_or_dir [...]
+usage: 
+    rm [-r] file_or_dir [...]
+options:
+    -r Flag to remove directories
+
 '''
 from .. tools.toolbox import bash,pprint
 import os,shutil
@@ -10,6 +14,10 @@ alias = ['remove']
 def main(self, line):
     """remove one or more files/directories"""
     args = bash(line)
+    rflag = False
+    if args[0]=='-r':
+        rflag = True
+        args.pop(0)
     if args is None:
       return
     elif (len(args) < 1):
@@ -20,14 +28,14 @@ def main(self, line):
         if not os.path.exists(filef):
           print "! Skipping: Not found -", pprint(filef)
           continue
-        if (os.path.isdir(full_file)):
+        if (os.path.isdir(full_file)) and rflag != False:
           try:
             shutil.rmtree(full_file, True)
             if (os.path.exists(full_file)):
               print "rm: %s: Unable to remove" % pprint(filef)
           except Exception:
             print "rm: %s: Unable to remove" % pprint(filef)
-        else:
+        elif args[0] != '.':
           try:
             os.remove(full_file)
           except Exception:

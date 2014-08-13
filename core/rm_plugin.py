@@ -1,42 +1,102 @@
 '''rm:
 remove one or more files/directories
 usage: 
-    rm [-r] file_or_dir [...]
-options:
-    -r Flag to remove directories
+    shellista-core rm
 
+positional arguments:
+  path             Path or paths of files/dirs to delete.
+
+optional arguments:
+  -h, --help       show this help message and exit
+  -r, --recursive  Recursively delete directories.
+  -f, --force      Ignore delete confirmation.
+  -v, --verbose    View console output.
 '''
-from .. tools.toolbox import bash,pprint
-import os,shutil
+#from .. tools.toolbox import bash,pprint
+import os
+import argparse
+
+
 
 alias = ['remove']
 
 def main(self, line):
     """remove one or more files/directories"""
-    args = bash(line)
-    rflag = False
-    if args[0]=='-r':
-        rflag = True
-        args.pop(0)
-    if args is None:
-      return
-    elif (len(args) < 1):
-      print "rm: Usage: rm file_or_dir [...]"
+    parser = argparse.ArgumentParser(description='shellista-core rm')
+    parser.add_argument('-r', '--recursive', 
+                        action="store_true", 
+                        default=False,
+                        help='Recursively delete directories.')
+    parser.add_argument('-f', '--force', 
+                        action="store_true", 
+                        default=False,
+                        help='Ignore delete confirmation.')
+    parser.add_argument('-v', '--verbose', 
+                        action="store_true", 
+                        default=False,
+                        help='View console output.')
+    parser.add_argument('path', action="store", nargs='*',help='Path or paths of files/dirs to delete.')
+    
+    args = parser.parse_args(line.split(' '))
+
+    #exit if no path arguments are found
+    if not args.path:
+        print 'rm: please use help rm'
+        return
+        
+    #setup print function
+    def printp(text):
+        pass
+        
+    if args.verbose:
+        def printp(text):
+            print text
     else:
-      for filef in args:
-        full_file = os.path.abspath(filef).rstrip('/')
-        if not os.path.exists(filef):
-          print "! Skipping: Not found -", pprint(filef)
-          continue
-        if (os.path.isdir(full_file)) and rflag != False:
-          try:
-            shutil.rmtree(full_file, True)
-            if (os.path.exists(full_file)):
-              print "rm: %s: Unable to remove" % pprint(filef)
-          except Exception:
-            print "rm: %s: Unable to remove" % pprint(filef)
-        elif args[0] != '.':
-          try:
-            os.remove(full_file)
-          except Exception:
-            print "rm: %s: Unable to remove" % pprint(filef)
+        def printp(text):
+            pass
+            
+    if not args.force:
+        def prompt(file):
+            result = raw_input('Delete %s? [Y,n]: '%file)
+            if result == 'Y' or result == 'y':
+                return True
+            else:
+                return False
+    else:
+        def prompt(file):
+            return True
+        
+    for path in args.path:
+        path = os.path.expanduser(path)
+        if os.path.isfile(path):
+            if prompt(path):
+                os.remove(path)
+                printp('%s has been deleted'%path)
+        elif os.path.isdir(path) and args.recursive:
+            for root, dirs, files in os.walk(path, topdown=False):
+                for name in files:
+                    if prompt(os.path.join(root,name)):
+                        os.remove(os.path.join(root, name))
+                        printp('%s file has been deleted.'% name)
+                for name in dirs:
+                    if prompt(os.path.join(root,name)):
+                        try:
+                            os.rmdir(os.path.join(root, name))
+                            printp('%s directory has been deleted.' % name)
+                        except:
+                            print 'Cannot delete %s, directory is not empty.' % os.path.join(root,name)
+            if prompt(path):
+                if path != '.':
+                    try:
+                        os.rmdir(path)
+                        printp('%s directory has been deleted.' % path)
+                    except:
+                        print 'Cannot delete %s, directory is not empty.' % path
+                
+            
+        elif os.path.isdir(path):
+            print 'rm: cannot remove directories. View help rm'
+        else:
+            print '%s does not exist.'% path
+            
+            

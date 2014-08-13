@@ -70,21 +70,30 @@ def main(self, line):
         path = os.path.expanduser(path)
         if os.path.isfile(path):
             if prompt(path):
-                printp('%s has been deleted'%path)
-                print 'fake delete'
                 os.remove(path)
+                printp('%s has been deleted'%path)
         elif os.path.isdir(path) and args.recursive:
             for root, dirs, files in os.walk(path, topdown=False):
                 for name in files:
                     if prompt(os.path.join(root,name)):
-                        printp('%s file has been deleted.'% name)
-                        print 'fake file delete'
                         os.remove(os.path.join(root, name))
+                        printp('%s file has been deleted.'% name)
                 for name in dirs:
                     if prompt(os.path.join(root,name)):
-                        printp('%s directory has been deleted.' % name)
-                        print 'fake dir delete'
-                        os.rmdir(os.path.join(root, name))
+                        try:
+                            os.rmdir(os.path.join(root, name))
+                            printp('%s directory has been deleted.' % name)
+                        except:
+                            print 'Cannot delete %s, directory is not empty.' % os.path.join(root,name)
+            if prompt(path):
+                if path != '.':
+                    try:
+                        os.rmdir(path)
+                        printp('%s directory has been deleted.' % path)
+                    except:
+                        print 'Cannot delete %s, directory is not empty.' % path
+                
+            
         elif os.path.isdir(path):
             print 'rm: cannot remove directories. View help rm'
         else:
